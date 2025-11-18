@@ -83,7 +83,7 @@ class App(customtkinter.CTk):
         super().__init__()
 
         self.title("Monitor Input Switcher")
-        self.geometry("520x700")
+        self.geometry("520x540")
         self.resizable(True, True)  # Allow window resizing
         
         try:
@@ -261,14 +261,14 @@ class App(customtkinter.CTk):
         )
         self.manage_favorites_btn.pack(side="right")
 
-        # Scrollable favorites container - starts very small, grows with content
-        self.favorites_scroll = customtkinter.CTkScrollableFrame(
+        # Favorites container - regular frame without scrolling, minimal height
+        self.favorites_scroll = customtkinter.CTkFrame(
             favorites_card,
-            height=50,
-            fg_color="transparent"
+            fg_color="transparent",
+            height=40
         )
-        # Start minimal (not expanded). Will grow vertically when favorites increase.
         self.favorites_scroll.pack(fill="x", expand=False, padx=12, pady=(0, 12))
+        self.favorites_scroll.pack_propagate(False)
 
         # ===== STATUS BAR =====
         status_frame = customtkinter.CTkFrame(main_container, height=40)
@@ -579,7 +579,7 @@ class App(customtkinter.CTk):
 
     def apply_theme(self):
         try:
-            theme = self.settings.get("theme", "dark")
+            theme = self.settings.get("theme", "light")
             if theme in AVAILABLE_THEMES:
                 customtkinter.set_appearance_mode(theme)
         except Exception as e:
@@ -667,7 +667,7 @@ class App(customtkinter.CTk):
             widget.destroy()
         
         if not self.favorites:
-            # When empty, show minimal placeholder text
+            # When empty, show minimal placeholder text and keep small
             no_fav = customtkinter.CTkLabel(
                 self.favorites_scroll,
                 text="Click 'Manage' to add favorites",
@@ -675,14 +675,11 @@ class App(customtkinter.CTk):
                 font=("Arial", 10)
             )
             no_fav.pack(pady=8)
-            # Keep it minimal when empty
-            try:
-                self.favorites_scroll.configure(height=40)
-            except Exception:
-                pass
+            # Keep minimal height when empty
+            self.favorites_scroll.configure(height=40)
             return
         
-        # Layout favorites in a responsive grid. Compact by default, grow vertically if more items.
+        # Layout favorites in a responsive grid
         total = len(self.favorites)
         max_cols = 4  # number of columns per row
         row = 0
@@ -703,17 +700,12 @@ class App(customtkinter.CTk):
                 col = 0
                 row += 1
 
-        # If the last row has items, count it
+        # Calculate and set appropriate height based on number of rows
         rows = row + (1 if col > 0 else 0)
         rows = max(1, rows)
-
-        # Resize the scroll area to fit rows but cap to a reasonable max height
         per_row_height = 48
-        new_height = min(20 + rows * per_row_height, 320)
-        try:
-            self.favorites_scroll.configure(height=new_height)
-        except Exception:
-            pass
+        new_height = 20 + rows * per_row_height
+        self.favorites_scroll.configure(height=new_height)
 
         # Configure column weights for equal sizing
         for i in range(max_cols):
@@ -770,7 +762,7 @@ class App(customtkinter.CTk):
         """Show manage favorites dialog"""
         manage_window = customtkinter.CTkToplevel(self)
         manage_window.title("Manage Favorites")
-        manage_window.geometry("480x550")
+        manage_window.resizable(False, False)
         manage_window.transient(self)
         manage_window.grab_set()
         
@@ -780,15 +772,16 @@ class App(customtkinter.CTk):
         title = customtkinter.CTkLabel(main_frame, text="⭐ Manage Favorite Setups", font=("Arial", 16, "bold"))
         title.pack(pady=(0, 15))
         
-        # Current favorites section
+        # Current favorites section with dynamic sizing
         fav_section = customtkinter.CTkFrame(main_frame)
-        fav_section.pack(fill="both", expand=True, pady=(0, 15))
+        fav_section.pack(fill="x", expand=False, pady=(0, 15))
         
         fav_header = customtkinter.CTkLabel(fav_section, text="Current Favorites:", font=("Arial", 12, "bold"))
         fav_header.pack(anchor="w", padx=12, pady=(12, 8))
         
-        favorites_list_frame = customtkinter.CTkScrollableFrame(fav_section, height=150)
-        favorites_list_frame.pack(fill="both", expand=True, padx=12, pady=(0, 12))
+        favorites_list_frame = customtkinter.CTkFrame(fav_section, height=60)
+        favorites_list_frame.pack(fill="x", expand=False, padx=12, pady=(0, 12))
+        favorites_list_frame.pack_propagate(False)
         
         def update_favorites_list():
             for widget in favorites_list_frame.winfo_children():
@@ -797,29 +790,40 @@ class App(customtkinter.CTk):
             if not self.favorites:
                 empty_label = customtkinter.CTkLabel(favorites_list_frame, text="No favorites saved yet.", text_color="gray")
                 empty_label.pack(pady=20)
-                return
+                # Keep small when empty
+                favorites_list_frame.configure(height=60)
+            else:
+                # Calculate height based on number of favorites (each item ~45px)
+                num_favorites = len(self.favorites)
+                new_height = min(60 + (num_favorites * 45), 250)  # Cap at 250px
+                favorites_list_frame.configure(height=new_height)
+                
+                for fav_name, (monitor_id, input_source) in self.favorites.items():
+                    fav_frame = customtkinter.CTkFrame(favorites_list_frame)
+                    fav_frame.pack(fill="x", pady=3)
+                    
+                    try:
+                        mon = next((m for m in self.monitors_data if m.get('id') == monitor_id), None)
+                        display_name = mon.get('display_name', f"Monitor {monitor_id}") if mon else f"Monitor {monitor_id}"
+                    except Exception:
+                        display_name = f"Monitor {monitor_id}"
+                    
+                    label_text = f"{fav_name}: {display_name} → {input_source}"
+                    label = customtkinter.CTkLabel(fav_frame, text=label_text, font=("Arial", 11))
+                    label.pack(side="left", padx=8, pady=6)
+                    
+                    delete_btn = customtkinter.CTkButton(
+                        fav_frame, text="Delete", width=70, height=28,
+                        command=lambda n=fav_name: delete_favorite(n),
+                        fg_color=("#D32F2F", "#C62828"),
+                        hover_color=("#C62828", "#B71C1C")
+                    )
+                    delete_btn.pack(side="right", padx=8)
             
-            for fav_name, (monitor_id, input_source) in self.favorites.items():
-                fav_frame = customtkinter.CTkFrame(favorites_list_frame)
-                fav_frame.pack(fill="x", pady=3)
-                
-                try:
-                    mon = next((m for m in self.monitors_data if m.get('id') == monitor_id), None)
-                    display_name = mon.get('display_name', f"Monitor {monitor_id}") if mon else f"Monitor {monitor_id}"
-                except Exception:
-                    display_name = f"Monitor {monitor_id}"
-                
-                label_text = f"{fav_name}: {display_name} → {input_source}"
-                label = customtkinter.CTkLabel(fav_frame, text=label_text, font=("Arial", 11))
-                label.pack(side="left", padx=8, pady=6)
-                
-                delete_btn = customtkinter.CTkButton(
-                    fav_frame, text="Delete", width=70, height=28,
-                    command=lambda n=fav_name: delete_favorite(n),
-                    fg_color=("#D32F2F", "#C62828"),
-                    hover_color=("#C62828", "#B71C1C")
-                )
-                delete_btn.pack(side="right", padx=8)
+            # Dynamically adjust window height based on actual content size
+            manage_window.update_idletasks()
+            required_height = main_frame.winfo_reqheight() + 30
+            manage_window.geometry(f"480x{required_height}")
         
         def delete_favorite(name):
             self.remove_favorite(name)
@@ -924,7 +928,7 @@ class App(customtkinter.CTk):
         editor_window.grab_set()
         
         main_frame = customtkinter.CTkFrame(editor_window)
-        main_frame.pack(fill="both", expand=True, padx=15, pady=15)
+        main_frame.pack(fill="both", expand=False, padx=15, pady=15)
         
         title = customtkinter.CTkLabel(main_frame, text="⌨️ Keyboard Shortcuts", font=("Arial", 16, "bold"))
         title.pack(pady=(0, 10))
