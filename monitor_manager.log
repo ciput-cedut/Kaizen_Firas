@@ -1624,3 +1624,27 @@ ValueError: transparency is not allowed for this attribute
 2025-11-18 12:46:27,046 - INFO - WMI PnP IDs: ['DISPLAY\\SHP14B3\\4&2D731249&0&UID8388688']
 2025-11-18 12:46:27,046 - INFO - Skipping internal laptop display at index 0 (DISPLAY\SHP14B3\4&2D731249&0&UID8388688)
 2025-11-18 12:46:29,887 - INFO - All monitor data: [{'display_name': 'Samsung - GW2270H', 'inputs': ['ANALOG1', 'HDMI1', 'HDMI2'], 'id': 1, 'current_input': 'Unknown'}]
+2025-11-20 19:52:03,790 - INFO - Global hotkeys registered successfully
+2025-11-20 19:52:04,413 - INFO - Found 1 monitors.
+2025-11-20 19:52:04,459 - INFO - Display adapter: NVIDIA GeForce RTX 4070 SUPER, Status: OK
+2025-11-20 19:52:04,483 - INFO - WMI PnP IDs: ['DISPLAY\\AOCB402\\5&2384264F&0&UID4357']
+2025-11-20 19:52:08,049 - INFO - All monitor data: [{'display_name': 'AOC - 27G4', 'inputs': ['DP1', 'HDMI1'], 'id': 0, 'current_input': 'Unknown'}]
+2025-11-20 19:53:17,358 - INFO - Global hotkeys registered successfully
+2025-11-20 19:53:17,793 - INFO - Found 1 monitors.
+2025-11-20 19:53:17,830 - INFO - Display adapter: NVIDIA GeForce RTX 4070 SUPER, Status: OK
+2025-11-20 19:53:17,850 - INFO - WMI PnP IDs: ['DISPLAY\\AOCB402\\5&2384264F&0&UID4357']
+2025-11-20 19:53:59,906 - INFO - Global hotkeys registered successfully
+2025-11-20 19:54:00,363 - INFO - Found 1 monitors.
+2025-11-20 19:54:00,410 - INFO - Display adapter: NVIDIA GeForce RTX 4070 SUPER, Status: OK
+2025-11-20 19:54:00,428 - INFO - WMI PnP IDs: ['DISPLAY\\AOCB402\\5&2384264F&0&UID4357']
+2025-11-20 19:54:03,994 - INFO - All monitor data: [{'display_name': 'AOC - 27G4', 'inputs': ['DP1', 'HDMI1'], 'id': 0, 'current_input': 'Unknown'}]
+2025-11-20 19:59:19,296 - INFO - Global hotkeys registered successfully
+2025-11-20 19:59:19,817 - INFO - Found 1 monitors.
+2025-11-20 19:59:19,854 - INFO - Display adapter: NVIDIA GeForce RTX 4070 SUPER, Status: OK
+2025-11-20 19:59:19,874 - INFO - WMI PnP IDs: ['DISPLAY\\AOCB402\\5&2384264F&0&UID4357']
+2025-11-20 19:59:23,436 - INFO - All monitor data: [{'display_name': 'AOC - 27G4', 'inputs': ['DP1', 'HDMI1'], 'id': 0, 'current_input': 'Unknown'}]
+2025-11-20 21:17:33,015 - INFO - Global hotkeys registered successfully
+2025-11-20 21:17:33,496 - INFO - Found 1 monitors.
+2025-11-20 21:17:33,543 - INFO - Display adapter: NVIDIA GeForce RTX 4070 SUPER, Status: OK
+2025-11-20 21:17:33,566 - INFO - WMI PnP IDs: ['DISPLAY\\AOCB402\\5&2384264F&0&UID4357']
+2025-11-20 21:17:37,128 - INFO - All monitor data: [{'display_name': 'AOC - 27G4', 'inputs': ['DP1', 'HDMI1'], 'id': 0, 'current_input': 'Unknown'}]

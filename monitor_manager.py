@@ -11,6 +11,9 @@ import keyboard
 import json
 from tkinter import messagebox
 from screeninfo import get_monitors as get_screen_info
+import winreg
+from pystray import Icon, Menu, MenuItem
+from PIL import Image, ImageDraw
 
 # Available themes for customtkinter
 AVAILABLE_THEMES = ["dark", "light"]
@@ -90,6 +93,14 @@ class App(customtkinter.CTk):
             self.iconbitmap(resource_path('monitor_manager_icon.ico'))
         except:
             pass
+        
+        # System tray setup
+        self.tray_icon = None
+        self.is_quitting = False
+        
+        # Override window close behavior and minimize behavior
+        self.protocol("WM_DELETE_WINDOW", self.minimize_to_tray)
+        self.bind("<Unmap>", self.on_minimize)
 
         # Default shortcut configuration
         self.default_shortcuts = {
@@ -121,7 +132,7 @@ class App(customtkinter.CTk):
             
         self.shortcuts = self.load_shortcuts() or self.default_shortcuts
         self.favorites = self.load_favorites() or {}
-        self.settings = self.load_settings() or {"theme": "dark"}
+        self.settings = self.load_settings() or {"theme": "light"}
         self.apply_theme()
         self.setup_global_hotkeys()
 
@@ -756,8 +767,10 @@ class App(customtkinter.CTk):
         self.startup_toggle.pack(side="right")
         
         # Check current startup status and set toggle accordingly
-        # (Placeholder for now - will be implemented later)
-        # self.startup_toggle.select() if startup_enabled else self.startup_toggle.deselect()
+        if self.is_in_startup():
+            self.startup_toggle.select()
+        else:
+            self.startup_toggle.deselect()
 
     def show_theme_settings(self):
         """Show theme settings dialog"""
@@ -804,9 +817,121 @@ class App(customtkinter.CTk):
         cancel_btn.pack(side="right", padx=(10, 0), expand=True, fill="x")
 
     def toggle_startup(self):
-        """Toggle startup with Windows - to be implemented"""
-        # Placeholder method - functionality will be implemented later
-        pass
+        """Toggle startup with Windows"""
+        try:
+            if self.startup_toggle.get():
+                self.add_to_startup()
+            else:
+                self.remove_from_startup()
+        except Exception as e:
+            logging.error(f"Error toggling startup: {e}")
+            messagebox.showerror("Error", f"Failed to update startup settings: {str(e)}")
+    
+    def is_in_startup(self):
+        """Check if the application is in Windows startup"""
+        try:
+            key = winreg.OpenKey(winreg.HKEY_CURRENT_USER, 
+                                r"Software\Microsoft\Windows\CurrentVersion\Run", 0, winreg.KEY_READ)
+            try:
+                winreg.QueryValueEx(key, "MonitorManager")
+                winreg.CloseKey(key)
+                return True
+            except FileNotFoundError:
+                winreg.CloseKey(key)
+                return False
+        except Exception as e:
+            logging.error(f"Error checking startup status: {e}")
+            return False
+    
+    def add_to_startup(self):
+        """Add the application to Windows startup"""
+        try:
+            # Get the path to the executable or script
+            if getattr(sys, 'frozen', False):
+                # Running as compiled executable
+                exe_path = sys.executable
+            else:
+                # Running as script
+                exe_path = os.path.abspath(sys.argv[0])
+            
+            key = winreg.OpenKey(winreg.HKEY_CURRENT_USER,
+                               r"Software\Microsoft\Windows\CurrentVersion\Run", 0, winreg.KEY_SET_VALUE)
+            winreg.SetValueEx(key, "MonitorManager", 0, winreg.REG_SZ, exe_path)
+            winreg.CloseKey(key)
+            logging.info(f"Added to startup: {exe_path}")
+            messagebox.showinfo("Success", "Application will now start with Windows")
+        except Exception as e:
+            logging.error(f"Error adding to startup: {e}")
+            raise
+    
+    def remove_from_startup(self):
+        """Remove the application from Windows startup"""
+        try:
+            key = winreg.OpenKey(winreg.HKEY_CURRENT_USER,
+                               r"Software\Microsoft\Windows\CurrentVersion\Run", 0, winreg.KEY_SET_VALUE)
+            try:
+                winreg.DeleteValue(key, "MonitorManager")
+                logging.info("Removed from startup")
+                messagebox.showinfo("Success", "Application will no longer start with Windows")
+            except FileNotFoundError:
+                logging.warning("Entry not found in startup")
+            finally:
+                winreg.CloseKey(key)
+        except Exception as e:
+            logging.error(f"Error removing from startup: {e}")
+            raise
+    
+    def create_tray_icon_image(self):
+        """Create a simple icon for the system tray"""
+        # Create a 64x64 icon with a monitor symbol
+        width = 64
+        height = 64
+        image = Image.new('RGB', (width, height), 'white')
+        dc = ImageDraw.Draw(image)
+        
+        # Draw a simple monitor shape
+        dc.rectangle([10, 10, 54, 40], fill='black', outline='black')
+        dc.rectangle([12, 12, 52, 38], fill='white', outline='white')
+        dc.rectangle([28, 40, 36, 48], fill='black', outline='black')
+        dc.rectangle([20, 48, 44, 52], fill='black', outline='black')
+        
+        return image
+    
+    def minimize_to_tray(self):
+        """Minimize the window to system tray"""
+        self.withdraw()  # Hide the window
+        
+        if self.tray_icon is None:
+            # Create tray icon
+            icon_image = self.create_tray_icon_image()
+            menu = Menu(
+                MenuItem('Show', self.show_window),
+                MenuItem('Quit', self.quit_app)
+            )
+            self.tray_icon = Icon("Monitor Manager", icon_image, "Monitor Input Switcher", menu)
+            
+            # Run tray icon in a separate thread
+            threading.Thread(target=self.tray_icon.run, daemon=True).start()
+    
+    def on_minimize(self, event):
+        """Handle window minimize event"""
+        # Check if the window state changed to iconic (minimized)
+        if event.widget == self and self.state() == 'iconic':
+            self.after(10, self.minimize_to_tray)
+    
+    def show_window(self, icon=None, item=None):
+        """Show the main window from system tray"""
+        self.deiconify()  # Show the window
+        self.lift()  # Bring to front
+        self.focus_force()  # Give focus
+    
+    def quit_app(self, icon=None, item=None):
+        """Quit the application completely"""
+        self.is_quitting = True
+        if self.tray_icon:
+            self.tray_icon.stop()
+        self.quit()
+        self.destroy()
 
     def show_manage_favorites(self):
         """Show manage favorites dialog"""
