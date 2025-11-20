@@ -166,6 +166,17 @@ class App(customtkinter.CTk):
         )
         self.shortcuts_button.pack(side="right", padx=2)
 
+        # Add Settings button beside the keyboard shortcut button
+        self.settings_button = customtkinter.CTkButton(
+            btn_frame,
+            text="⚙",  # Gear icon for settings
+            command=self.show_settings,
+            width=35,
+            height=35,
+            font=("Arial", 16)
+            )
+        self.settings_button.pack(side="right", padx=2)
+
         # ===== MONITOR SELECTION CARD =====
         monitor_card = customtkinter.CTkFrame(main_container)
         monitor_card.pack(fill="x", pady=(0, 10))
@@ -714,6 +725,40 @@ class App(customtkinter.CTk):
             except Exception:
                 pass
 
+    def show_settings(self):
+        """Show settings dialog"""
+        settings_window = customtkinter.CTkToplevel(self)
+        settings_window.title("Settings")
+        settings_window.geometry("350x250")
+        settings_window.resizable(False, False)
+        settings_window.transient(self)
+        settings_window.grab_set()
+        
+        frame = customtkinter.CTkFrame(settings_window)
+        frame.pack(fill="both", expand=True, padx=20, pady=20)
+        
+        label = customtkinter.CTkLabel(frame, text="⚙️ Settings", font=("Arial", 16, "bold"))
+        label.pack(pady=(0, 20))
+        
+        # Startup with Windows toggle
+        startup_frame = customtkinter.CTkFrame(frame, fg_color="transparent")
+        startup_frame.pack(fill="x", pady=10)
+        
+        startup_label = customtkinter.CTkLabel(startup_frame, text="Start with Windows", font=("Arial", 12))
+        startup_label.pack(side="left", padx=(0, 10))
+        
+        self.startup_toggle = customtkinter.CTkSwitch(
+            startup_frame,
+            text="",
+            width=50,
+            command=self.toggle_startup
+        )
+        self.startup_toggle.pack(side="right")
+        
+        # Check current startup status and set toggle accordingly
+        # (Placeholder for now - will be implemented later)
+        # self.startup_toggle.select() if startup_enabled else self.startup_toggle.deselect()
+
     def show_theme_settings(self):
         """Show theme settings dialog"""
         theme_window = customtkinter.CTkToplevel(self)
@@ -757,6 +802,11 @@ class App(customtkinter.CTk):
         
         cancel_btn = customtkinter.CTkButton(button_frame, text="Cancel", command=theme_window.destroy, height=32)
         cancel_btn.pack(side="right", padx=(10, 0), expand=True, fill="x")
+
+    def toggle_startup(self):
+        """Toggle startup with Windows - to be implemented"""
+        # Placeholder method - functionality will be implemented later
+        pass
 
     def show_manage_favorites(self):
         """Show manage favorites dialog"""
