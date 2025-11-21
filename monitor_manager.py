@@ -7,7 +7,8 @@ import os
 import sys
 import shutil
 from pathlib import Path
-import keyboard
+from pynput import keyboard
+from pynput.keyboard import Key, KeyCode, HotKey, GlobalHotKeys, Listener
 import json
 from tkinter import messagebox
 from screeninfo import get_monitors as get_screen_info
@@ -134,6 +135,9 @@ class App(customtkinter.CTk):
         self.favorites = self.load_favorites() or {}
         self.settings = self.load_settings() or {"theme": "light"}
         self.apply_theme()
+        
+        # Initialize hotkey listener
+        self.hotkey_listener = None
         self.setup_global_hotkeys()
 
         # ===== MAIN CONTAINER =====
@@ -524,15 +528,29 @@ class App(customtkinter.CTk):
             logging.error(f"Failed to switch input: {e}")
 
     def setup_global_hotkeys(self):
-        """Setup global keyboard shortcuts"""
+        """Setup global keyboard shortcuts using pynput"""
         try:
+            # Stop existing listener if any
+            if self.hotkey_listener:
+                self.hotkey_listener.stop()
+            
+            # Create hotkey mappings for pynput format
+            hotkey_map = {}
+            
+            # Convert shortcuts to pynput format
             for shortcut, (monitor_id, input_source) in self.shortcuts.items():
-                keyboard.add_hotkey(
-                    shortcut,
-                    lambda m=monitor_id, i=input_source: self.handle_global_hotkey(m, i)
-                )
-            keyboard.add_hotkey('ctrl+shift+h', self.show_shortcuts_help)
-            logging.info("Global hotkeys registered successfully")
+                # Convert shortcut format (e.g., 'ctrl+shift+1' to '<ctrl>+<shift>+1')
+                pynput_shortcut = shortcut.replace('ctrl', '<ctrl>').replace('alt', '<alt>').replace('shift', '<shift>')
+                hotkey_map[pynput_shortcut] = lambda m=monitor_id, i=input_source: self.handle_global_hotkey(m, i)
+            
+            # Add help shortcut
+            hotkey_map['<ctrl>+<shift>+h'] = self.show_shortcuts_help
+            
+            # Create and start the global hotkey listener
+            self.hotkey_listener = GlobalHotKeys(hotkey_map)
+            self.hotkey_listener.start()
+            
+            logging.info("Global hotkeys registered successfully with pynput")
         except Exception as e:
             logging.error(f"Failed to register global hotkeys: {e}")
 
@@ -670,11 +688,6 @@ class App(customtkinter.CTk):
 
             self.shortcuts[shortcut_key] = (monitor_id, input_source)
             self.save_shortcuts()
-            
-            try:
-                keyboard.clear_all_hotkeys()
-            except Exception:
-                pass
             self.setup_global_hotkeys()
 
             logging.info(f"Added shortcut {shortcut_key} -> Monitor {monitor_id} : {input_source}")
@@ -1182,21 +1195,67 @@ class App(customtkinter.CTk):
             label.pack(pady=30)
             
             recorded_keys = []
+            modifier_keys = set()
+            listener_active = [True]
             
-            def on_key(event):
-                if event.name not in recorded_keys and event.name not in ['ctrl', 'alt', 'shift']:
-                    recorded_keys.extend(k for k in ['ctrl', 'alt', 'shift'] if keyboard.is_pressed(k))
-                    recorded_keys.append(event.name)
-                    shortcut = '+'.join(recorded_keys)
-                    label.configure(text=f"Recorded: {shortcut}\n\nPress Enter to confirm or Esc to cancel")
+            def on_press(key):
+                if not listener_active[0]:
+                    return False
                     
-                    if event.name == 'enter':
+                try:
+                    # Track modifier keys
+                    if key == Key.ctrl or key == Key.ctrl_l or key == Key.ctrl_r:
+                        modifier_keys.add('ctrl')
+                    elif key == Key.alt or key == Key.alt_l or key == Key.alt_r:
+                        modifier_keys.add('alt')
+                    elif key == Key.shift or key == Key.shift_l or key == Key.shift_r:
+                        modifier_keys.add('shift')
+                    elif key == Key.enter:
+                        # Confirm shortcut
+                        if recorded_keys:
+                            listener_active[0] = False
+                            dialog.destroy()
+                            callback('+'.join(recorded_keys[:-1]) if recorded_keys[-1] == 'enter' else '+'.join(recorded_keys))
+                        return False
+                    elif key == Key.esc:
+                        # Cancel
+                        listener_active[0] = False
                         dialog.destroy()
-                        callback('+'.join(recorded_keys[:-1]))
-                    elif event.name == 'esc':
-                        dialog.destroy()
+                        return False
+                    else:
+                        # Regular key pressed - record the combination
+                        if key not in recorded_keys:
+                            key_name = key.char if hasattr(key, 'char') else str(key).split('.')[-1]
+                            recorded_keys.clear()
+                            recorded_keys.extend(sorted(modifier_keys))
+                            recorded_keys.append(key_name)
+                            shortcut = '+'.join(recorded_keys)
+                            label.configure(text=f"Recorded: {shortcut}\n\nPress Enter to confirm or Esc to cancel")
+                except AttributeError:
+                    pass
             
-            keyboard.on_press(on_key)
+            def on_release(key):
+                # Remove modifier from tracking when released
+                try:
+                    if key == Key.ctrl or key == Key.ctrl_l or key == Key.ctrl_r:
+                        modifier_keys.discard('ctrl')
+                    elif key == Key.alt or key == Key.alt_l or key == Key.alt_r:
+                        modifier_keys.discard('alt')
+                    elif key == Key.shift or key == Key.shift_l or key == Key.shift_r:
+                        modifier_keys.discard('shift')
+                except AttributeError:
+                    pass
+            
+            # Start listener in a separate thread
+            listener = Listener(on_press=on_press, on_release=on_release)
+            listener.start()
+            
+            def on_dialog_close():
+                listener_active[0] = False
+                listener.stop()
+                dialog.destroy()
+            
+            dialog.protocol("WM_DELETE_WINDOW", on_dialog_close)
             
         def add_new_shortcut():
             def on_shortcut(shortcut):
@@ -1278,10 +1337,6 @@ class App(customtkinter.CTk):
                     value = self.shortcuts.pop(shortcut)
                     self.shortcuts[new_shortcut] = value
                     self.save_shortcuts()
-                    try:
-                        keyboard.clear_all_hotkeys()
-                    except:
-                        pass
                     self.setup_global_hotkeys()
                     update_shortcuts_list()
             
@@ -1290,10 +1345,6 @@ class App(customtkinter.CTk):
         def delete_shortcut(shortcut):
             self.shortcuts.pop(shortcut)
             self.save_shortcuts()
-            try:
-                keyboard.clear_all_hotkeys()
-            except:
-                pass
             self.setup_global_hotkeys()
             update_shortcuts_list()
         
@@ -1307,10 +1358,6 @@ class App(customtkinter.CTk):
         def reset_defaults():
             self.shortcuts = self.default_shortcuts.copy()
             self.save_shortcuts()
-            try:
-                keyboard.clear_all_hotkeys()
-            except:
-                pass
             self.setup_global_hotkeys()
             update_shortcuts_list()
             
