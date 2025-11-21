@@ -1648,3 +1648,25 @@ ValueError: transparency is not allowed for this attribute
 2025-11-20 21:17:33,543 - INFO - Display adapter: NVIDIA GeForce RTX 4070 SUPER, Status: OK
 2025-11-20 21:17:33,566 - INFO - WMI PnP IDs: ['DISPLAY\\AOCB402\\5&2384264F&0&UID4357']
 2025-11-20 21:17:37,128 - INFO - All monitor data: [{'display_name': 'AOC - 27G4', 'inputs': ['DP1', 'HDMI1'], 'id': 0, 'current_input': 'Unknown'}]
+2025-11-21 07:50:24,823 - INFO - Global hotkeys registered successfully
+2025-11-21 07:50:26,586 - INFO - Found 2 monitors.
+2025-11-21 07:50:26,783 - INFO - Display adapter: Intel(R) Iris(R) Xe Graphics, Status: OK
+2025-11-21 07:50:26,841 - INFO - WMI PnP IDs: ['DISPLAY\\SHP14B3\\4&2D731249&0&UID8388688']
+2025-11-21 07:50:26,842 - INFO - Skipping internal laptop display at index 0 (DISPLAY\SHP14B3\4&2D731249&0&UID8388688)
+2025-11-21 07:50:29,720 - INFO - All monitor data: [{'display_name': 'Samsung - GW2270H', 'inputs': ['ANALOG1', 'HDMI1', 'HDMI2'], 'id': 1, 'current_input': 'Unknown'}]
+2025-11-21 08:04:24,167 - INFO - Global hotkeys registered successfully with pynput
+2025-11-21 08:04:26,248 - INFO - Found 2 monitors.
+2025-11-21 08:04:26,475 - INFO - Display adapter: Intel(R) Iris(R) Xe Graphics, Status: OK
+2025-11-21 08:04:26,534 - INFO - WMI PnP IDs: ['DISPLAY\\SHP14B3\\4&2D731249&0&UID8388688']
+2025-11-21 08:04:26,534 - INFO - Skipping internal laptop display at index 0 (DISPLAY\SHP14B3\4&2D731249&0&UID8388688)
+2025-11-21 08:04:29,370 - INFO - All monitor data: [{'display_name': 'Samsung - GW2270H', 'inputs': ['ANALOG1', 'HDMI1', 'HDMI2'], 'id': 1, 'current_input': 'Unknown'}]
+2025-11-21 08:05:57,843 - INFO - Global hotkeys registered successfully with pynput
+2025-11-21 08:05:59,456 - INFO - Found 2 monitors.
+2025-11-21 08:05:59,654 - INFO - Display adapter: Intel(R) Iris(R) Xe Graphics, Status: OK
+2025-11-21 08:05:59,730 - INFO - WMI PnP IDs: ['DISPLAY\\SHP14B3\\4&2D731249&0&UID8388688']
+2025-11-21 08:05:59,730 - INFO - Skipping internal laptop display at index 0 (DISPLAY\SHP14B3\4&2D731249&0&UID8388688)
+2025-11-21 08:06:02,607 - INFO - All monitor data: [{'display_name': 'Samsung - GW2270H', 'inputs': ['ANALOG1', 'HDMI1', 'HDMI2'], 'id': 1, 'current_input': 'Unknown'}]
+2025-11-21 08:38:32,740 - INFO - Hotkey: Switched monitor 1 to HDMI1
+2025-11-21 09:04:14,807 - INFO - Found 2 monitors.
+2025-11-21 09:04:14,921 - INFO - WMI PnP IDs: ['DISPLAY\\SHP14B3\\4&2D731249&0&UID8388688']
+2025-11-21 09:04:14,925 - WARNING - Could not get model for monitor 0: failed to get VCP capabilities: An error occurred while transmitting data to the device on the I2C bus.
