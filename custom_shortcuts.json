@@ -1,18 +1,2 @@
 {
-    "ctrl+shift+1": [
-        0,
-        "HDMI1"
-    ],
-    "ctrl+shift+2": [
-        0,
-        "DP1"
-    ],
-    "ctrl+shift+3": [
-        1,
-        "HDMI1"
-    ],
-    "ctrl+shift+4": [
-        1,
-        "DP1"
-    ]
 }

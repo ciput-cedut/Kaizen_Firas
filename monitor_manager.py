@@ -108,14 +108,6 @@ class App(customtkinter.CTk):
         self.protocol("WM_DELETE_WINDOW", self.minimize_to_tray)
         self.bind("<Unmap>", self.on_minimize)
 
-        # Default shortcut configuration
-        self.default_shortcuts = {
-            'ctrl+shift+1': (0, 'HDMI1'),
-            'ctrl+shift+2': (0, 'DP1'),
-            'ctrl+shift+3': (1, 'HDMI1'),
-            'ctrl+shift+4': (1, 'DP1'),
-        }
-        
         # Configuration paths
         config_dir = get_user_config_dir()
         try:
@@ -136,10 +128,13 @@ class App(customtkinter.CTk):
         except Exception as e:
             logging.debug(f"Could not migrate old shortcuts file: {e}")
             
-        self.shortcuts = self.load_shortcuts() or self.default_shortcuts
+        self.shortcuts = self.load_shortcuts() or {}
         self.favorites = self.load_favorites() or {}
-        self.settings = self.load_settings() or {"theme": "light"}
+        self.settings = self.load_settings() or {"theme": "light", "tray_on": "close"}
         self.apply_theme()
+        
+        # Apply tray behavior based on settings
+        self.update_tray_behavior()
         
         self.setup_global_hotkeys()
 
@@ -185,15 +180,15 @@ class App(customtkinter.CTk):
         self.shortcuts_button.pack(side="right", padx=2)
 
         # Add Settings button beside the keyboard shortcut button
-        # self.settings_button = customtkinter.CTkButton(
-        #     btn_frame,
-        #     text="⚙",  # Gear icon for settings
-        #     command=self.show_settings,
-        #     width=35,
-        #     height=35,
-        #     font=("Arial", 16)
-        #     )
-        # self.settings_button.pack(side="right", padx=2)
+        self.settings_button = customtkinter.CTkButton(
+            btn_frame,
+            text="⚙",  # Gear icon for settings
+            command=self.show_settings,
+            width=35,
+            height=35,
+            font=("Arial", 16)
+            )
+        self.settings_button.pack(side="right", padx=2)
 
         # ===== MONITOR SELECTION CARD =====
         monitor_card = customtkinter.CTkFrame(main_container)
@@ -747,7 +742,7 @@ class App(customtkinter.CTk):
         """Show settings dialog"""
         settings_window = customtkinter.CTkToplevel(self)
         settings_window.title("Settings")
-        settings_window.geometry("350x250")
+        settings_window.geometry("420x380")
         settings_window.resizable(False, False)
         settings_window.transient(self)
         settings_window.grab_set()
@@ -756,28 +751,81 @@ class App(customtkinter.CTk):
         frame.pack(fill="both", expand=True, padx=20, pady=20)
         
         label = customtkinter.CTkLabel(frame, text="⚙️ Settings", font=("Arial", 16, "bold"))
-        label.pack(pady=(0, 20))
+        label.pack(pady=(0, 10))
         
-        # Startup with Windows toggle
-        startup_frame = customtkinter.CTkFrame(frame, fg_color="transparent")
-        startup_frame.pack(fill="x", pady=10)
+        # System Tray Behavior
+        tray_frame = customtkinter.CTkFrame(frame, fg_color="transparent")
+        tray_frame.pack(fill="x", pady=5)
         
-        startup_label = customtkinter.CTkLabel(startup_frame, text="Start with Windows", font=("Arial", 12))
-        startup_label.pack(side="left", padx=(0, 10))
+        tray_title = customtkinter.CTkLabel(tray_frame, text=" Window Behavior", font=("Arial", 13, "bold"))
+        tray_title.pack(anchor="w", pady=(0, 3))
         
-        self.startup_toggle = customtkinter.CTkSwitch(
-            startup_frame,
-            text="",
-            width=50,
-            command=self.toggle_startup
+        tray_desc = customtkinter.CTkLabel(
+            tray_frame, 
+            text="Choose what happens when you minimize or close the window:", 
+            font=("Arial", 10),
+            text_color="gray"
         )
-        self.startup_toggle.pack(side="right")
+        tray_desc.pack(anchor="w", pady=(0, 10))
         
-        # Check current startup status and set toggle accordingly
-        if self.is_in_startup():
-            self.startup_toggle.select()
-        else:
-            self.startup_toggle.deselect()
+        tray_on = self.settings.get("tray_on", "close")
+        self.tray_radio_var = customtkinter.StringVar(value=tray_on)
+        
+        close_radio = customtkinter.CTkRadioButton(
+            tray_frame,
+            text="When I click Close (X) → Hide to tray (keep running)",
+            variable=self.tray_radio_var,
+            value="close",
+            command=self.update_tray_setting
+        )
+        close_radio.pack(anchor="w", pady=3, padx=5)
+        
+        minimize_radio = customtkinter.CTkRadioButton(
+            tray_frame,
+            text="When I click Minimize (_) → Hide to tray",
+            variable=self.tray_radio_var,
+            value="minimize",
+            command=self.update_tray_setting
+        )
+        minimize_radio.pack(anchor="w", pady=3, padx=5)
+        
+        both_radio = customtkinter.CTkRadioButton(
+            tray_frame,
+            text="Both Close and Minimize → Hide to tray",
+            variable=self.tray_radio_var,
+            value="both",
+            command=self.update_tray_setting
+        )
+        both_radio.pack(anchor="w", pady=3, padx=5)
+        
+        none_radio = customtkinter.CTkRadioButton(
+            tray_frame,
+            text="Normal Windows behavior (no system tray)",
+            variable=self.tray_radio_var,
+            value="none",
+            command=self.update_tray_setting
+        )
+        none_radio.pack(anchor="w", pady=3, padx=5)
+        
+        # Add helpful note in highlighted box
+        note_frame = customtkinter.CTkFrame(tray_frame, fg_color=("#E3F2FD", "#1E3A5F"))
+        note_frame.pack(fill="x", pady=(12, 0))
+        
+        note_icon = customtkinter.CTkLabel(
+            note_frame,
+            text="💡",
+            font=("Arial", 14)
+        )
+        note_icon.pack(side="left", padx=(10, 5), pady=8)
+        
+        note_text = customtkinter.CTkLabel(
+            note_frame,
+            text="When hidden in tray, right-click the tray icon to show or quit",
+            font=("Arial", 10, "bold"),
+            justify="left",
+            wraplength=320
+        )
+        note_text.pack(side="left", padx=(5, 10), pady=8)
 
     def show_theme_settings(self):
         """Show theme settings dialog"""
@@ -823,70 +871,30 @@ class App(customtkinter.CTk):
         cancel_btn = customtkinter.CTkButton(button_frame, text="Cancel", command=theme_window.destroy, height=32)
         cancel_btn.pack(side="right", padx=(10, 0), expand=True, fill="x")
 
-    def toggle_startup(self):
-        """Toggle startup with Windows"""
-        try:
-            if self.startup_toggle.get():
-                self.add_to_startup()
-            else:
-                self.remove_from_startup()
-        except Exception as e:
-            logging.error(f"Error toggling startup: {e}")
-            messagebox.showerror("Error", f"Failed to update startup settings: {str(e)}")
+    def update_tray_setting(self):
+        """Update system tray behavior setting"""
+        self.settings["tray_on"] = self.tray_radio_var.get()
+        self.save_settings()
+        self.update_tray_behavior()
+        logging.info(f"Tray behavior set to: {self.settings['tray_on']}")
     
-    def is_in_startup(self):
-        """Check if the application is in Windows startup"""
+    def update_tray_behavior(self):
+        """Update window behaviors based on tray_on setting"""
+        tray_on = self.settings.get("tray_on", "close")
+        
+        # Update close button behavior
+        if tray_on in ["close", "both"]:
+            self.protocol("WM_DELETE_WINDOW", self.minimize_to_tray)
+        else:
+            self.protocol("WM_DELETE_WINDOW", self.quit_app)
+        
+        # Update minimize behavior binding
         try:
-            key = winreg.OpenKey(winreg.HKEY_CURRENT_USER, 
-                                r"Software\Microsoft\Windows\CurrentVersion\Run", 0, winreg.KEY_READ)
-            try:
-                winreg.QueryValueEx(key, "MonitorManager")
-                winreg.CloseKey(key)
-                return True
-            except FileNotFoundError:
-                winreg.CloseKey(key)
-                return False
-        except Exception as e:
-            logging.error(f"Error checking startup status: {e}")
-            return False
-    
-    def add_to_startup(self):
-        """Add the application to Windows startup"""
-        try:
-            # Get the path to the executable or script
-            if getattr(sys, 'frozen', False):
-                # Running as compiled executable
-                exe_path = sys.executable
-            else:
-                # Running as script
-                exe_path = os.path.abspath(sys.argv[0])
-            
-            key = winreg.OpenKey(winreg.HKEY_CURRENT_USER,
-                               r"Software\Microsoft\Windows\CurrentVersion\Run", 0, winreg.KEY_SET_VALUE)
-            winreg.SetValueEx(key, "MonitorManager", 0, winreg.REG_SZ, exe_path)
-            winreg.CloseKey(key)
-            logging.info(f"Added to startup: {exe_path}")
-            messagebox.showinfo("Success", "Application will now start with Windows")
-        except Exception as e:
-            logging.error(f"Error adding to startup: {e}")
-            raise
-    
-    def remove_from_startup(self):
-        """Remove the application from Windows startup"""
-        try:
-            key = winreg.OpenKey(winreg.HKEY_CURRENT_USER,
-                               r"Software\Microsoft\Windows\CurrentVersion\Run", 0, winreg.KEY_SET_VALUE)
-            try:
-                winreg.DeleteValue(key, "MonitorManager")
-                logging.info("Removed from startup")
-                messagebox.showinfo("Success", "Application will no longer start with Windows")
-            except FileNotFoundError:
-                logging.warning("Entry not found in startup")
-            finally:
-                winreg.CloseKey(key)
-        except Exception as e:
-            logging.error(f"Error removing from startup: {e}")
-            raise
+            self.unbind("<Unmap>")
+        except:
+            pass
+        if tray_on in ["minimize", "both"]:
+            self.bind("<Unmap>", self.on_minimize)
     
     def create_tray_icon_image(self):
         """Create a simple icon for the system tray"""
@@ -924,7 +932,10 @@ class App(customtkinter.CTk):
         """Handle window minimize event"""
         # Check if the window state changed to iconic (minimized)
         if event.widget == self and self.state() == 'iconic':
-            self.after(10, self.minimize_to_tray)
+            # Only minimize to tray if setting allows it
+            tray_on = self.settings.get("tray_on", "close")
+            if tray_on in ["minimize", "both"]:
+                self.after(10, self.minimize_to_tray)
     
     def show_window(self, icon=None, item=None):
         """Show the main window from system tray"""
@@ -1115,13 +1126,24 @@ class App(customtkinter.CTk):
         title = customtkinter.CTkLabel(main_frame, text="⌨️ Keyboard Shortcuts", font=("Arial", 16, "bold"))
         title.pack(pady=(0, 10))
         
-        instructions = customtkinter.CTkLabel(
-            main_frame,
-            text="Global hotkeys work even when this app is minimized.\nPress Ctrl+Shift+H anywhere to show shortcuts help.",
-            font=("Arial", 10),
-            text_color="gray"
+        # Add prominent disclaimer about global hotkeys
+        disclaimer_frame = customtkinter.CTkFrame(main_frame, fg_color=("#E3F2FD", "#1E3A5F"))
+        disclaimer_frame.pack(fill="x", pady=(0, 15), padx=5)
+        
+        disclaimer_icon = customtkinter.CTkLabel(
+            disclaimer_frame,
+            text="💡",
+            font=("Arial", 16)
         )
-        instructions.pack(pady=(0, 15))
+        disclaimer_icon.pack(side="left", padx=(10, 5), pady=8)
+        
+        disclaimer_text = customtkinter.CTkLabel(
+            disclaimer_frame,
+            text="Global hotkeys work even when the app is minimized or in the background.\nPress Ctrl+Shift+H anywhere to show shortcuts help.",
+            font=("Arial", 10, "bold"),
+            justify="left"
+        )
+        disclaimer_text.pack(side="left", padx=(5, 10), pady=8)
 
         # Shortcuts list section
         shortcuts_section = customtkinter.CTkFrame(main_frame)
@@ -1319,20 +1341,7 @@ class App(customtkinter.CTk):
         buttons_frame.pack(fill="x")
         
         add_button = customtkinter.CTkButton(buttons_frame, text="➕ Add New Shortcut", command=add_new_shortcut, height=36, font=("Arial", 12, "bold"))
-        add_button.pack(side="left", expand=True, fill="x", padx=(0, 8))
-        
-        def reset_defaults():
-            self.shortcuts = self.default_shortcuts.copy()
-            self.save_shortcuts()
-            try:
-                keyboard.clear_all_hotkeys()
-            except:
-                pass
-            self.setup_global_hotkeys()
-            update_shortcuts_list()
-            
-        reset_button = customtkinter.CTkButton(buttons_frame, text="↺ Reset to Defaults", command=reset_defaults, height=36, font=("Arial", 12))
-        reset_button.pack(side="right", expand=True, fill="x", padx=(8, 0))
+        add_button.pack(fill="x")
         
         update_shortcuts_list()
 
