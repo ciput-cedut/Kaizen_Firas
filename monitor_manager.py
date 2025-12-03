@@ -59,26 +59,33 @@ PNP_IDS = {
     "GIG": "Gigabyte", "RAZ": "Razer",
 }
 
+# USB-C Display Detection:
+# USB-C ports with DisplayPort Alt Mode are detected via DDC/CI VCP codes
+# Code 27 (0x1B) = USB-C with DP Alt Mode
+# Code 26 (0x1A) = Thunderbolt (also uses USB-C connector)
+# Standard InputSource enum covers: HDMI, DP, DVI, VGA, etc.
+# Non-standard codes are displayed as INPUT_<code> for debugging
+
 # Fallback brand detection from model
-MODEL_BRAND_MAP = {
-    "PA": "ASUS", "PG": "ASUS", "VG": "ASUS", "MG": "ASUS", "ROG": "ASUS", 
-    "TUF": "ASUS", "XG": "ASUS", "BE": "ASUS", "VP": "ASUS",
-    "AW": "Alienware", "U": "Dell", "P": "Dell", "S": "Dell", "E": "Dell",
-    "LG": "LG", "MP": "LG", "GP": "LG", "OLED": "LG", "GL": "LG", 
-    "GN": "LG", "UK": "LG", "UM": "LG",
-    "C": "Samsung", "G": "Samsung", "ODYSSEY": "Samsung", "S": "Samsung",
-    "U": "Samsung", "F": "Samsung", "LS": "Samsung",
-    "27G": "AOC", "24G": "AOC", "22": "AOC", "Q27": "AOC", "CQ": "AOC",
-    "C24": "AOC", "C27": "AOC", "C32": "AOC", "AG": "AOC", "AGON": "AOC",
-    "VX": "ViewSonic", "XG": "ViewSonic", "VA": "ViewSonic", "VP": "ViewSonic",
-    "XL": "BenQ", "EX": "BenQ", "PD": "BenQ", "EW": "BenQ", "ZOWIE": "BenQ",
-    "XV": "Acer", "XF": "Acer", "KG": "Acer", "CB": "Acer", "XB": "Acer",
-    "NITRO": "Acer", "PREDATOR": "Acer",
-    "MAG": "MSI", "MPG": "MSI", "OPTIX": "MSI", "MEG": "MSI",
-    "FI": "Gigabyte", "M": "Gigabyte", "G27": "Gigabyte", "AORUS": "Gigabyte",
-    "OMEN": "HP", "X27": "HP", "Z27": "HP", "PAVILION": "HP",
-    "BDM": "Philips", "PHL": "Philips", "PHI": "Philips"
-}
+#MODEL_BRAND_MAP = {
+    #"PA": "ASUS", "PG": "ASUS", "VG": "ASUS", "MG": "ASUS", "ROG": "ASUS", 
+    #"TUF": "ASUS", "XG": "ASUS", "BE": "ASUS", "VP": "ASUS",
+    #"AW": "Alienware", "U": "Dell", "P": "Dell", "S": "Dell", "E": "Dell",
+    #"LG": "LG", "MP": "LG", "GP": "LG", "OLED": "LG", "GL": "LG", 
+    #"GN": "LG", "UK": "LG", "UM": "LG",
+    #"C": "Samsung", "G": "Samsung", "ODYSSEY": "Samsung", "S": "Samsung",
+    #"U": "Samsung", "F": "Samsung", "LS": "Samsung",
+    #"27G": "AOC", "24G": "AOC", "22": "AOC", "Q27": "AOC", "CQ": "AOC",
+    #"C24": "AOC", "C27": "AOC", "C32": "AOC", "AG": "AOC", "AGON": "AOC",
+    #"VX": "ViewSonic", "XG": "ViewSonic", "VA": "ViewSonic", "VP": "ViewSonic",
+    #"XL": "BenQ", "EX": "BenQ", "PD": "BenQ", "EW": "BenQ", "ZOWIE": "BenQ",
+    #"XV": "Acer", "XF": "Acer", "KG": "Acer", "CB": "Acer", "XB": "Acer",
+    #"NITRO": "Acer", "PREDATOR": "Acer",
+    #"MAG": "MSI", "MPG": "MSI", "OPTIX": "MSI", "MEG": "MSI",
+    #"FI": "Gigabyte", "M": "Gigabyte", "G27": "Gigabyte", "AORUS": "Gigabyte",
+    #"OMEN": "HP", "X27": "HP", "Z27": "HP", "PAVILION": "HP",
+    #"BDM": "Philips", "PHL": "Philips", "PHI": "Philips"
+#}
 
 def resource_path(relative_path):
     try:
@@ -367,7 +374,7 @@ class App(customtkinter.CTk):
         self.progress_bar.pack_forget()
         self.switch_button.configure(state="normal")
         self.refresh_button.configure(state="normal")
-
+    
     def get_all_monitor_data(self):
         """Get all monitor data - keeping original implementation"""
         all_data = []
@@ -442,16 +449,6 @@ class App(customtkinter.CTk):
                     model = parse_edid(edid)
 
             if platform.system() == "Windows":
-                if model != "Unknown":
-                    model_upper = model.upper()
-                    for prefix, brand_name in MODEL_BRAND_MAP.items():
-                        if model_upper.startswith(prefix):
-                            brand = brand_name
-                            break
-                    
-                    if brand == "Unknown" and ("G2" in model_upper or "G3" in model_upper or "G4" in model_upper):
-                        brand = "AOC"
-                
                 if brand == "Unknown" and i < len(pnp_ids):
                     try:
                         if pnp_ids[i]:
@@ -459,32 +456,56 @@ class App(customtkinter.CTk):
                             brand = PNP_IDS.get(pnp_code, "Unknown")
                     except Exception:
                         pass
+                #else:
+                    #if model != "Unknown":
+                        #model_upper = model.upper()
+                        #for prefix, brand_name in MODEL_BRAND_MAP.items():
+                           #if model_upper.startswith(prefix):
+                                #brand = brand_name
+                                #break
 
             try:
+                input_names = []
                 with monitor_obj:
                     caps = monitor_obj.get_vcp_capabilities()
                     inputs = caps.get('inputs', [])
-                    input_names = [inp.name for inp in inputs]
-                    
-                    if not input_names:
-                        input_names = ["DP1", "DP2", "mDP1", "HDMI1", "HDMI2", "DVI1", "VGA1", "USB-C1"]
-                    
+                    for inp in inputs:
+                        if hasattr(inp, 'name'):
+                            input_names.append(inp.name)
+                        elif isinstance(inp, int):
+                            # USB-C with DisplayPort Alt Mode uses code 27 (0x1B)
+                            # Thunderbolt also uses USB-C connector with DP protocol
+                            if inp == 27:
+                                input_names.append("USB-C")
+                            elif inp == 26:
+                                input_names.append("THUNDERBOLT")
+                            else:
+                                # Unknown input code - display as is for debugging
+                                input_names.append(f"INPUT_{inp}")
+
             except Exception as e:
                 logging.warning(f"Could not get inputs for monitor {i}: {e}")
-                input_names = ["DP1", "DP2", "mDP1", "HDMI1", "HDMI2", "DVI1", "VGA1", "USB-C1"]
 
+            #Get current input
             try:
                 with monitor_obj:
-                    current_input_obj = monitor_obj.get_input_source()
-                    current_input = current_input_obj.name
-            except Exception:
-                current_input = "Unknown"
+                    current_input = monitor_obj.get_input_source()
+                    if hasattr(current_input, 'value'):
+                        current_code = current_input.value
+                        current_name = current_input.name if hasattr(current_input, 'name') else str(current_input)
+                    else:
+                        current_code = int(current_input)
+                        current_name = get_input_name(current_code)
+            except Exception as e:
+                    logging.warning(f"⚠️  Could not read current input: {e}")
+                    current_code = None
+                    current_name = "Unknown"
 
             all_data.append({
                 "display_name": f"{brand} - {model}",
                 "inputs": input_names,
                 "id": i,
-                "current_input": current_input
+                "current_input": current_name
             })
 
         logging.info(f"All monitor data: {all_data}")
@@ -499,10 +520,7 @@ class App(customtkinter.CTk):
         self.input_menu.configure(values=self.selected_monitor_data['inputs'])
         if self.selected_monitor_data['inputs']:
             current_input = self.selected_monitor_data.get('current_input', "Unknown")
-            if current_input in self.selected_monitor_data['inputs']:
-                self.input_menu.set(current_input)
-            else:
-                self.input_menu.set(self.selected_monitor_data['inputs'][0])
+            self.input_menu.set(current_input)
         else:
             self.input_menu.set("No inputs found")
 
@@ -514,7 +532,19 @@ class App(customtkinter.CTk):
 
         try:
             selected_monitor_id = self.selected_monitor_data['id']
-            new_input = getattr(InputSource, new_input_str)
+            
+            # Handle custom input codes (USB-C, Thunderbolt, etc.)
+            if new_input_str == "USB-C":
+                new_input = 27  # USB-C with DisplayPort Alt Mode
+            elif new_input_str == "THUNDERBOLT":
+                new_input = 26  # Thunderbolt
+            elif new_input_str.startswith("INPUT_"):
+                # Handle unknown input codes (INPUT_XX format)
+                new_input = int(new_input_str.split('_')[1])
+            else:
+                # Standard InputSource enum values
+                new_input = getattr(InputSource, new_input_str)
+            
             with get_monitors()[selected_monitor_id] as monitor:
                 monitor.set_input_source(new_input)
 
@@ -544,11 +574,22 @@ class App(customtkinter.CTk):
             monitors = get_monitors()
             if monitor_id < len(monitors):
                 with monitors[monitor_id] as monitor:
-                    if hasattr(InputSource, input_source):
+                    # Handle custom input codes
+                    if input_source == "USB-C":
+                        input_obj = 27
+                    elif input_source == "THUNDERBOLT":
+                        input_obj = 26
+                    elif input_source.startswith("INPUT_"):
+                        input_obj = int(input_source.split('_')[1])
+                    elif hasattr(InputSource, input_source):
                         input_obj = getattr(InputSource, input_source)
-                        monitor.set_input_source(input_obj)
-                        self.status_label.configure(text=f"✅ Hotkey: Switched to {input_source}")
-                        logging.info(f"Hotkey: Switched monitor {monitor_id} to {input_source}")
+                    else:
+                        logging.error(f"Unknown input source: {input_source}")
+                        return
+                    
+                    monitor.set_input_source(input_obj)
+                    self.status_label.configure(text=f"✅ Hotkey: Switched to {input_source}")
+                    logging.info(f"Hotkey: Switched monitor {monitor_id} to {input_source}")
         except Exception as e:
             self.status_label.configure(text=f"❌ Hotkey error: {str(e)[:40]}")
             logging.error(f"Hotkey error: {e}")
@@ -1376,6 +1417,34 @@ class App(customtkinter.CTk):
         )
         customize_btn.pack(pady=(20, 0), fill="x")
 
+def get_input_name(code):
+    """Convert input code to readable name"""
+    # Standard InputSource enum mapping
+    standard_inputs = {
+        0: "OFF",
+        1: "ANALOG1/VGA",
+        2: "ANALOG2",
+        3: "DVI1",
+        4: "DVI2",
+        5: "COMPOSITE1",
+        6: "COMPOSITE2",
+        7: "SVIDEO1",
+        8: "SVIDEO2",
+        9: "TUNER1",
+        10: "TUNER2",
+        11: "TUNER3",
+        12: "COMPONENT1",
+        13: "COMPONENT2",
+        14: "COMPONENT3",
+        15: "DP1 (DisplayPort 1)",
+        16: "DP2 (DisplayPort 2)",
+        17: "HDMI1",
+        18: "HDMI2",
+        26: "THUNDERBOLT",
+        27: "USB-C"
+    }
+    
+    return standard_inputs.get(code, f"UNKNOWN CODE {code}")
 
 def cli_switch_input(monitor_index, input_name):
     """Switch input via command line interface"""
@@ -1426,7 +1495,6 @@ def cli_list_monitors():
 
     except Exception as e:
         print(f"Error: {e}")
-
 
 if __name__ == "__main__":
     try:
