@@ -67,25 +67,25 @@ PNP_IDS = {
 # Non-standard codes are displayed as INPUT_<code> for debugging
 
 # Fallback brand detection from model
-#MODEL_BRAND_MAP = {
-    #"PA": "ASUS", "PG": "ASUS", "VG": "ASUS", "MG": "ASUS", "ROG": "ASUS", 
-    #"TUF": "ASUS", "XG": "ASUS", "BE": "ASUS", "VP": "ASUS",
-    #"AW": "Alienware", "U": "Dell", "P": "Dell", "S": "Dell", "E": "Dell",
-    #"LG": "LG", "MP": "LG", "GP": "LG", "OLED": "LG", "GL": "LG", 
-    #"GN": "LG", "UK": "LG", "UM": "LG",
-    #"C": "Samsung", "G": "Samsung", "ODYSSEY": "Samsung", "S": "Samsung",
-    #"U": "Samsung", "F": "Samsung", "LS": "Samsung",
-    #"27G": "AOC", "24G": "AOC", "22": "AOC", "Q27": "AOC", "CQ": "AOC",
-    #"C24": "AOC", "C27": "AOC", "C32": "AOC", "AG": "AOC", "AGON": "AOC",
-    #"VX": "ViewSonic", "XG": "ViewSonic", "VA": "ViewSonic", "VP": "ViewSonic",
-    #"XL": "BenQ", "EX": "BenQ", "PD": "BenQ", "EW": "BenQ", "ZOWIE": "BenQ",
-    #"XV": "Acer", "XF": "Acer", "KG": "Acer", "CB": "Acer", "XB": "Acer",
-    #"NITRO": "Acer", "PREDATOR": "Acer",
-    #"MAG": "MSI", "MPG": "MSI", "OPTIX": "MSI", "MEG": "MSI",
-    #"FI": "Gigabyte", "M": "Gigabyte", "G27": "Gigabyte", "AORUS": "Gigabyte",
-    #"OMEN": "HP", "X27": "HP", "Z27": "HP", "PAVILION": "HP",
-    #"BDM": "Philips", "PHL": "Philips", "PHI": "Philips"
-#}
+MODEL_BRAND_MAP = {
+    "PA": "ASUS", "PG": "ASUS", "VG": "ASUS", "MG": "ASUS", "ROG": "ASUS", 
+    "TUF": "ASUS", "XG": "ASUS", "BE": "ASUS", "VP": "ASUS",
+    "AW": "Alienware", "U": "Dell", "P": "Dell", "S": "Dell", "E": "Dell",
+    "LG": "LG", "MP": "LG", "GP": "LG", "OLED": "LG", "GL": "LG", 
+    "GN": "LG", "UK": "LG", "UM": "LG",
+    "C": "Samsung", "G": "Samsung", "ODYSSEY": "Samsung", "S": "Samsung",
+    "U": "Samsung", "F": "Samsung", "LS": "Samsung",
+    "27G": "AOC", "24G": "AOC", "22": "AOC", "Q27": "AOC", "CQ": "AOC",
+    "C24": "AOC", "C27": "AOC", "C32": "AOC", "AG": "AOC", "AGON": "AOC",
+    "VX": "ViewSonic", "XG": "ViewSonic", "VA": "ViewSonic", "VP": "ViewSonic",
+    "XL": "BenQ", "EX": "BenQ", "PD": "BenQ", "EW": "BenQ","GW": "BenQ", "ZOWIE": "BenQ",
+    "XV": "Acer", "XF": "Acer", "KG": "Acer", "CB": "Acer", "XB": "Acer",
+    "NITRO": "Acer", "PREDATOR": "Acer",
+    "MAG": "MSI", "MPG": "MSI", "OPTIX": "MSI", "MEG": "MSI",
+    "FI": "Gigabyte", "M": "Gigabyte", "G27": "Gigabyte", "AORUS": "Gigabyte",
+    "OMEN": "HP", "X27": "HP", "Z27": "HP", "PAVILION": "HP",
+    "BDM": "Philips", "PHL": "Philips", "PHI": "Philips"
+}
 
 def resource_path(relative_path):
     try:
@@ -456,13 +456,13 @@ class App(customtkinter.CTk):
                             brand = PNP_IDS.get(pnp_code, "Unknown")
                     except Exception:
                         pass
-                #else:
-                    #if model != "Unknown":
-                        #model_upper = model.upper()
-                        #for prefix, brand_name in MODEL_BRAND_MAP.items():
-                           #if model_upper.startswith(prefix):
-                                #brand = brand_name
-                                #break
+                else:
+                    if model != "Unknown":
+                        model_upper = model.upper()
+                        for prefix, brand_name in MODEL_BRAND_MAP.items():
+                            if model_upper.startswith(prefix):
+                                brand = brand_name
+                                break
 
             try:
                 input_names = []
