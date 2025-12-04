@@ -1,0 +1,21 @@
+2025-12-02 12:10:50,834 - INFO - Global hotkeys registered successfully
+2025-12-02 12:10:51,356 - INFO - Found 2 monitors.
+2025-12-02 12:10:51,404 - INFO - Display adapter: Intel(R) Graphics, Status: OK
+2025-12-02 12:10:51,423 - INFO - WMI PnP IDs: ['DISPLAY\\BNQ78CE\\4&240147C3&0&UID24648']
+2025-12-02 12:10:55,996 - WARNING - Could not get inputs for monitor 0: 'int' object has no attribute 'name'
+2025-12-02 12:11:05,567 - INFO - All monitor data: [{'display_name': 'Samsung - S2725QC', 'inputs': ['DP1', 'DP2', 'mDP1', 'HDMI1', 'HDMI2', 'DVI1', 'VGA1', 'USB-C1'], 'id': 0, 'current_input': 'Unknown'}, {'display_name': 'LG - GL2460', 'inputs': ['ANALOG1', 'DVI1'], 'id': 1, 'current_input': 'Unknown'}]
+2025-12-02 12:11:12,906 - INFO - Found 2 monitors.
+2025-12-02 12:11:12,949 - INFO - Display adapter: Intel(R) Graphics, Status: OK
+2025-12-02 12:11:12,970 - INFO - WMI PnP IDs: ['DISPLAY\\BNQ78CE\\4&240147C3&0&UID24648']
+2025-12-02 12:11:17,570 - WARNING - Could not get inputs for monitor 0: 'int' object has no attribute 'name'
+2025-12-02 12:11:27,171 - INFO - All monitor data: [{'display_name': 'Samsung - S2725QC', 'inputs': ['DP1', 'DP2', 'mDP1', 'HDMI1', 'HDMI2', 'DVI1', 'VGA1', 'USB-C1'], 'id': 0, 'current_input': 'Unknown'}, {'display_name': 'LG - GL2460', 'inputs': ['ANALOG1', 'DVI1'], 'id': 1, 'current_input': 'Unknown'}]
+2025-12-02 12:11:47,525 - INFO - Successfully switched to HDMI1
+2025-12-02 12:14:33,508 - INFO - Successfully switched to DP1
+2025-12-02 12:14:38,146 - INFO - Successfully switched to HDMI2
+2025-12-02 12:15:09,145 - INFO - Successfully switched to HDMI2
+2025-12-02 13:24:37,074 - INFO - Global hotkeys registered successfully
+2025-12-02 13:24:37,557 - INFO - Found 2 monitors.
+2025-12-02 13:24:37,605 - INFO - Display adapter: Intel(R) Graphics, Status: OK
+2025-12-02 13:24:37,626 - INFO - WMI PnP IDs: ['DISPLAY\\DELA272\\4&240147C3&0&UID57414']
+2025-12-02 13:24:42,171 - WARNING - Could not get inputs for monitor 0: 'int' object has no attribute 'name'
+2025-12-02 13:24:51,645 - INFO - All monitor data: [{'display_name': 'Samsung - S2725QC', 'inputs': ['DP1', 'DP2', 'mDP1', 'HDMI1', 'HDMI2', 'DVI1', 'VGA1', 'USB-C1'], 'id': 0, 'current_input': 'Unknown'}, {'display_name': 'LG - GL2460', 'inputs': ['ANALOG1', 'DVI1'], 'id': 1, 'current_input': 'Unknown'}]
