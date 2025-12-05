@@ -69,23 +69,27 @@ PNP_IDS = {
 # Fallback brand detection from model
 MODEL_BRAND_MAP = {
     "PA": "ASUS", "PG": "ASUS", "VG": "ASUS", "MG": "ASUS", "ROG": "ASUS", 
-    "TUF": "ASUS", "XG": "ASUS", "BE": "ASUS", "VP": "ASUS",
-    "AW": "Alienware", "U": "Dell", "P": "Dell", "S": "Dell", "E": "Dell",
+    "TUF": "ASUS", "BE": "ASUS",
+    "AW": "Alienware", 
+    "U24": "Dell", "U27": "Dell", "U34": "Dell", "P24": "Dell", "P27": "Dell", 
+    "S24": "Dell", "S27": "Dell", "E24": "Dell", "E27": "Dell",
     "LG": "LG", "MP": "LG", "GP": "LG", "OLED": "LG", "GL": "LG", 
     "GN": "LG", "UK": "LG", "UM": "LG",
-    "C": "Samsung", "G": "Samsung", "ODYSSEY": "Samsung", "S": "Samsung",
-    "U": "Samsung", "F": "Samsung", "LS": "Samsung",
+    "C24G": "Samsung", "C27G": "Samsung", "C32G": "Samsung", "ODYSSEY": "Samsung", 
+    "LS": "Samsung", "F24": "Samsung", "F27": "Samsung",
     "27G": "AOC", "24G": "AOC", "22": "AOC", "Q27": "AOC", "CQ": "AOC",
     "C24": "AOC", "C27": "AOC", "C32": "AOC", "AG": "AOC", "AGON": "AOC",
-    "VX": "ViewSonic", "XG": "ViewSonic", "VA": "ViewSonic", "VP": "ViewSonic",
-    "XL": "BenQ", "EX": "BenQ", "PD": "BenQ", "EW": "BenQ","GW": "BenQ", "ZOWIE": "BenQ",
+    "VX": "ViewSonic", "VA": "ViewSonic", "VG": "ViewSonic",
+    "XL": "BenQ", "EX": "BenQ", "PD": "BenQ", "EW": "BenQ", "ZOWIE": "BenQ", "GW": "BenQ",
     "XV": "Acer", "XF": "Acer", "KG": "Acer", "CB": "Acer", "XB": "Acer",
     "NITRO": "Acer", "PREDATOR": "Acer",
     "MAG": "MSI", "MPG": "MSI", "OPTIX": "MSI", "MEG": "MSI",
-    "FI": "Gigabyte", "M": "Gigabyte", "G27": "Gigabyte", "AORUS": "Gigabyte",
+    "FI": "Gigabyte", "M27": "Gigabyte", "M32": "Gigabyte", "G27F": "Gigabyte", "AORUS": "Gigabyte",
     "OMEN": "HP", "X27": "HP", "Z27": "HP", "PAVILION": "HP",
     "BDM": "Philips", "PHL": "Philips", "PHI": "Philips"
 }
+
+monitors = get_monitors()
 
 def resource_path(relative_path):
     try:
@@ -378,9 +382,9 @@ class App(customtkinter.CTk):
     def get_all_monitor_data(self):
         """Get all monitor data - keeping original implementation"""
         all_data = []
+        pnp_ids = []
 
         try:
-            monitors = get_monitors()
             logging.info(f"Found {len(monitors)} monitors.")
             
             if platform.system() == "Windows":
@@ -396,23 +400,23 @@ class App(customtkinter.CTk):
             logging.error(f"Could not get monitors: {e}")
             return []
 
-        pnp_ids = []
-        if platform.system() == "Windows":
-            try:
-                c = wmi.WMI()
-                wmi_monitors = c.Win32_DesktopMonitor()
-                for monitor in wmi_monitors:
-                    pnp_ids.append(getattr(monitor, 'PNPDeviceID', None))
-                logging.info(f"WMI PnP IDs: {pnp_ids}")
-            except Exception as e:
-                logging.error(f"Failed to get device information from WMI: {e}")
+        for monitor in monitors:
+            if platform.system() == "Windows":
+                try:
+                    c = wmi.WMI()
+                    wmi_monitors = c.Win32_DesktopMonitor()
+                    for monitor in wmi_monitors:
+                        pnp_ids.append(getattr(monitor, 'PNPDeviceID', None))
+                except Exception as e:
+                    logging.error(f"Failed to get device information from WMI: {e}")
+        logging.info(f"WMI PnP IDs: {pnp_ids}")
 
         def read_edid(pnp_id):
             try:
                 import winreg
                 key = winreg.OpenKey(
                     winreg.HKEY_LOCAL_MACHINE,
-                    r"SYSTEM\CurrentControlSet\Enum\\" + pnp_id + r"\Device Parameters"
+                    r"SYSTEM\\CurrentControlSet\\Enum\\" + pnp_id + r"\Device Parameters"
                 )
                 edid_data, _ = winreg.QueryValueEx(key, "EDID")
                 return edid_data
@@ -449,6 +453,7 @@ class App(customtkinter.CTk):
                     model = parse_edid(edid)
 
             if platform.system() == "Windows":
+                # Try to get brand from PNP code first
                 if brand == "Unknown" and i < len(pnp_ids):
                     try:
                         if pnp_ids[i]:
@@ -456,13 +461,14 @@ class App(customtkinter.CTk):
                             brand = PNP_IDS.get(pnp_code, "Unknown")
                     except Exception:
                         pass
-                else:
-                    if model != "Unknown":
-                        model_upper = model.upper()
-                        for prefix, brand_name in MODEL_BRAND_MAP.items():
-                            if model_upper.startswith(prefix):
-                                brand = brand_name
-                                break
+               
+                # If PNP lookup failed, try model prefix matching as fallback
+                if brand == "Unknown" and model != "Unknown":
+                    model_upper = model.upper()
+                    for prefix, brand_name in MODEL_BRAND_MAP.items():
+                        if model_upper.startswith(prefix):
+                            brand = brand_name
+                            break
 
             try:
                 input_names = []
@@ -516,23 +522,35 @@ class App(customtkinter.CTk):
             if data['display_name'] == selected_monitor_name:
                 self.selected_monitor_data = data
                 break
-        
+            
         self.input_menu.configure(values=self.selected_monitor_data['inputs'])
         if self.selected_monitor_data['inputs']:
             current_input = self.selected_monitor_data.get('current_input', "Unknown")
-            self.input_menu.set(current_input)
+            if current_input in self.selected_monitor_data['inputs']:
+                self.input_menu.set(current_input)
+            else:
+                self.input_menu.set(self.selected_monitor_data['inputs'][0])
         else:
             self.input_menu.set("No inputs found")
 
     def switch_input(self):
         new_input_str = self.input_menu.get()
+        logging.info(f"Input name: {new_input_str}")
         if new_input_str == "No inputs found" or not hasattr(self, 'selected_monitor_data'):
             self.status_label.configure(text="❌ Cannot switch: No monitor or input selected")
             return
 
+        from monitorcontrol import get_monitors
+
+        m = get_monitors()[1]  # Monitor 1 (P2417H)
+
+        with m:
+            logging.info(f"Supported VCP codes: {m.get_vcp_capabilities()}")
+
         try:
             selected_monitor_id = self.selected_monitor_data['id']
-            
+            logging.info(f"Current Monitor ID: {selected_monitor_id}")
+
             # Handle custom input codes (USB-C, Thunderbolt, etc.)
             if new_input_str == "USB-C":
                 new_input = 27  # USB-C with DisplayPort Alt Mode
@@ -544,9 +562,12 @@ class App(customtkinter.CTk):
             else:
                 # Standard InputSource enum values
                 new_input = getattr(InputSource, new_input_str)
-            
-            with get_monitors()[selected_monitor_id] as monitor:
+            logging.info(f"Input name: {new_input}")
+
+            with monitors[selected_monitor_id] as monitor:
+                logging.info(f"monitor: {monitor}")
                 monitor.set_input_source(new_input)
+            logging.info(f"Input name after: {new_input}")
 
             self.status_label.configure(text=f"✅ Switched to {new_input_str}")
             logging.info(f"Successfully switched to {new_input_str}")
@@ -571,7 +592,6 @@ class App(customtkinter.CTk):
     def handle_global_hotkey(self, monitor_id, input_source):
         """Handle global hotkey press"""
         try:
-            monitors = get_monitors()
             if monitor_id < len(monitors):
                 with monitors[monitor_id] as monitor:
                     # Handle custom input codes
@@ -685,7 +705,6 @@ class App(customtkinter.CTk):
                 return False
             
             monitor_id, input_source = self.favorites[name]
-            monitors = get_monitors()
             
             if monitor_id >= len(monitors):
                 self.status_label.configure(text=f"❌ Monitor {monitor_id} not found")
@@ -1436,8 +1455,8 @@ def get_input_name(code):
         12: "COMPONENT1",
         13: "COMPONENT2",
         14: "COMPONENT3",
-        15: "DP1 (DisplayPort 1)",
-        16: "DP2 (DisplayPort 2)",
+        15: "DP1",
+        16: "DP2",
         17: "HDMI1",
         18: "HDMI2",
         26: "THUNDERBOLT",
@@ -1449,7 +1468,6 @@ def get_input_name(code):
 def cli_switch_input(monitor_index, input_name):
     """Switch input via command line interface"""
     try:
-        monitors = get_monitors()
         if not monitors:
             print("Error: No monitors found")
             return False
